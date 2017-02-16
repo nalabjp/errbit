@@ -100,7 +100,11 @@ class Notice
 
   def env_vars
     vars = request['cgi-data']
-    vars.is_a?(Hash) ? vars : {}
+    if vars.is_a?(Hash)
+      flatten_env_vars_if_nested(vars)
+    else
+      {}
+    end
   end
 
   def params
@@ -151,5 +155,17 @@ protected
         h
       end
     end
+  end
+
+  def nested_env_vars?(vars)
+    keys = %w(httpMethod referer headers)
+    (vars.keys & keys).length == keys.length
+  end
+
+  def flatten_env_vars_if_nested(vars)
+    return vars unless nested_env_vars?(vars) || vars['headers'].is_a?(Hash)
+
+    v = vars.deep_dup
+    v.merge!(v.delete('headers'))
   end
 end
